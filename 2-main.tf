@@ -8,8 +8,8 @@ resource "aws_s3_bucket" "frontend" {
   }
 }
 
-<<<<<<< HEAD
+
 // test updated
-=======
+
 //test
->>>>>>> refs/remotes/origin/main
+
