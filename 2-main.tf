@@ -49,7 +49,23 @@ resource "aws_s3_object" "image" {
   etag = filemd5("./lab_deliverables/Image_1.png")
 }
 
+resource "aws_s3_object" "image2" {
+  bucket = aws_s3_bucket.practice_lab.bucket
+  key    = "Image_2.png"
+  source = "./lab_deliverables/Image_2.png"
+  content_type = "image/png"
 
+  etag = filemd5("./lab_deliverables/Image_2.png")
+}
+
+resource "aws_s3_object" "image3" {
+  bucket = aws_s3_bucket.practice_lab.bucket
+  key    = "Image_3.png"
+  source = "./lab_deliverables/Image_3.png"
+  content_type = "image/png"
+
+  etag = filemd5("./lab_deliverables/Image_3.png")
+}
 
 // test updated
 
