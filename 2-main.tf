@@ -40,15 +40,13 @@ resource "aws_s3_bucket_policy" "public_access" {
 }
 
 
-resource "aws_s3_object" "object_upload" {
-  for_each = fileset("${path.module}/jenkins-s3-test/lab_deliverables", "**/*.*")
-  
-  bucket = aws_s3_bucket.practice_lab.id
-  key    = each.value # The object key in S3 will be the file name and path relative to app_files/
-  source = "${path.module}/jenkins-s3-test/lab_deliverables/${each.value}" # The local file path
+resource "aws_s3_object" "image" {
+  bucket = aws_s3_bucket.practice_lab.bucket
+  key    = "image_1.png"
+  source = "./lab_deliverables/image_1.png"
+  content_type = "image/png"
 
-  # Automatically calculate the ETag as an MD5 hash of the file content
-  etag = filemd5("${path.module}/jenkins-s3-test/lab_deliverables/${each.value}") 
+  etag = filemd5("./lab-example/image_1.png")
 }
 
 
