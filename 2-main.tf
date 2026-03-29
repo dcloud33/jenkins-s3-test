@@ -78,7 +78,7 @@ resource "aws_s3_object" "text_deliverable" {
 
 resource "aws_s3_object" "image4" {
   bucket = aws_s3_bucket.practice_lab.bucket
-  key    = "Image_3.png"
+  key    = "Image_4.png"
   source = "./lab_deliverables/Image_4.png"
   content_type = "image/png"
 
