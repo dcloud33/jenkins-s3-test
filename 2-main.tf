@@ -42,12 +42,13 @@ resource "aws_s3_bucket_policy" "public_access" {
 
 resource "aws_s3_object" "image" {
   bucket = aws_s3_bucket.practice_lab.bucket
-  key    = "image_1.png"
-  source = "./lab_deliverables/image_1.png"
+  key    = "Image_1.png"
+  source = "./lab_deliverables/Image_1.png"
   content_type = "image/png"
 
-  etag = filemd5("./lab-example/image_1.png")
+  etag = filemd5("./lab_deliverables/Image_1.png")
 }
+
 
 
 // test updated
