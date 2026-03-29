@@ -67,7 +67,7 @@ resource "aws_s3_object" "image3" {
   etag = filemd5("./lab_deliverables/Image_3.png")
 }
 
-resource "aws_s3_object" "image3" {
+resource "aws_s3_object" "text_deliverable" {
   bucket = aws_s3_bucket.practice_lab.bucket
   key    = "lab_deliverable.txt"
   source = "./lab_deliverables/lab_deliverable.txt"
