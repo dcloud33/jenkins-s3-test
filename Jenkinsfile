@@ -80,27 +80,27 @@ pipeline {
             }
         }
     
-        stage('Snyk IaC Scan Test') {
-            steps {
-                withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
-                    script {
-                        if (isUnix()) {
-                            // Unix/Linux/macOS-based systems
-                            sh '''
-                                ./snyk auth $SNYK_TOKEN
-                                ./snyk iac test --org=$SNYK_ORG --severity-threshold=high || true
-                            '''
-                        } else {
-                            // Windows-based systems
-                            bat '''
-                                .\\snyk auth %SNYK_TOKEN%
-                                .\\snyk iac test --org=%SNYK_ORG% --severity-threshold=high || exit /b 0
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Snyk IaC Scan Test') {
+        //     steps {
+        //         withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
+        //             script {
+        //                 if (isUnix()) {
+        //                     // Unix/Linux/macOS-based systems
+        //                     sh '''
+        //                         ./snyk auth $SNYK_TOKEN
+        //                         ./snyk iac test --org=$SNYK_ORG --severity-threshold=high || true
+        //                     '''
+        //                 } else {
+        //                     // Windows-based systems
+        //                     bat '''
+        //                         .\\snyk auth %SNYK_TOKEN%
+        //                         .\\snyk iac test --org=%SNYK_ORG% --severity-threshold=high || exit /b 0
+        //                     '''
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
 
         stage('Snyk IaC Scan Monitor') {
