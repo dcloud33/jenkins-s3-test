@@ -2,74 +2,60 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'us-east-1'
+        TF_IN_AUTOMATION   = 'true'
+        SNYK_ORG           = credentials('snyk-org-slug')
     }
 
     stages {
-        stage('Set AWS Credentials') {
+        stage('Checkout') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkins_test001'
-                ]]) {
+                checkout scm
+            }
+        }
+
+        stage('Snyk IaC Scan Test') {
+            steps {
+                withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
                     sh '''
-                        echo "Checking AWS identity..."
-                        aws sts get-caller-identity
+                        export PATH=$PATH:/var/lib/jenkins/tools/io.snyk.jenkins.tools.SnykInstallation/snyk
+                        snyk-linux auth $SNYK_TOKEN
+                        snyk-linux iac test --org=$SNYK_ORG --severity-threshold=high || true
                     '''
                 }
             }
         }
-
-        stage('Checkout Code') {
+        
+        stage('Snyk IaC Scan Monitor') {
             steps {
-                git branch: 'main', url: 'https://github.com/dcloud33/jenkins-s3-test.git'
+                snykSecurity(
+                    snykInstallation: 'snyk',
+                    snykTokenId: 'snyk-api-token',
+                    additionalArguments: '--iac --report --org=$SNYK_ORG --severity-threshold=high',
+                    failOnIssues: true,
+                    monitorProjectOnBuild: false
+                )
             }
         }
 
-        stage('Initialize Terraform') {
+        stage('Terraform Init') {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkins_test001'
+                    credentialsId: 'jenkinstest' //aws creds
                 ]]) {
-                    sh '''
-                        terraform init
-                    '''
+                    sh 'terraform init'
                 }
             }
         }
 
-        stage('Validate Terraform') {
-            steps {
-                sh '''
-                    terraform validate
-                '''
-            }
-        }
-
-        stage('Plan Terraform') {
+        stage('Terraform Plan') {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkins_test001'
+                    credentialsId: 'jenkinstest'
                 ]]) {
-                    sh '''
-                        terraform plan -out=tfplan
-                    '''
-                }
-            }
-        }
-
-        stage('Apply Terraform') {
-            steps {
-                //input message: 'Approve Terraform Apply?', ok: 'Deploy'
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkins_test001'
-                ]]) {
-                    sh '''
-                        terraform apply -auto-approve tfplan
-                    '''
+                    sh 'terraform plan'
                 }
             }
         }
@@ -92,26 +78,15 @@ pipeline {
                     if (destroyChoice == 'yes') {
                         withCredentials([[
                             $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'jenkins_test001'
+                            credentialsId: 'jenkinstest'
                         ]]) {
-                            sh '''
-                                terraform destroy -auto-approve
-                            '''
+                            sh 'terraform destroy -auto-approve'
                         }
                     } else {
-                        echo 'Skipping destroy'
+                        echo "Skipping destroy"
                     }
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Terraform deployment completed successfully!'
-        }
-        failure {
-            echo 'Terraform deployment failed!'
         }
     }
 }
