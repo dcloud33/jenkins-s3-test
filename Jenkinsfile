@@ -101,19 +101,36 @@ pipeline {
         //         }
         //     }
         // }
+stage('Snyk IaC Scan') {
+    steps {
+        withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
+            sh '''
+                # Install Snyk if not present
+                if ! command -v snyk &> /dev/null && [ ! -f ./snyk ]; then
+                    echo "Installing Snyk CLI..."
+                    curl -sL https://downloads.snyk.io/cli/stable/snyk-linux -o snyk
+                    chmod +x snyk
+                fi
 
+                # Use local binary if present
+                SNYK_CMD="snyk"
+                if [ -f ./snyk ]; then
+                    SNYK_CMD="./snyk"
+                fi
 
-        stage('Snyk IaC Scan Monitor') {
-            steps {
-                snykSecurity(
-                    snykInstallation: 'snyk',  // This references the global Snyk tool
-                    snykTokenId: 'snyk-api-token',
-                    additionalArguments: '--iac --report --org=$SNYK_ORG --severity-threshold=high',
-                    failOnIssues: true,
-                    monitorProjectOnBuild: false
-                )
-            }
+                $SNYK_CMD --version
+
+                # Authenticate
+                $SNYK_CMD auth $SNYK_TOKEN
+
+                # Run scan
+                $SNYK_CMD iac test --org=$SNYK_ORG --severity-threshold=high
+            '''
         }
+    }
+}
+
+
 
         stage('Terraform Init') {
             steps {
