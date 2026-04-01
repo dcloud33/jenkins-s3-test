@@ -1,5 +1,5 @@
 plugins:
-  - artifactId: "aws-credentials"
+  - artifactId: "jenkinstest"
     source:
       version: "254.v978a_5e206a_d7"
   - artifactId: "pipeline-github"
