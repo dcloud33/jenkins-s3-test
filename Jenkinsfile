@@ -14,23 +14,99 @@ pipeline {
             }
         }
 
+        stage('Install Snyk CLI if Not Installed') {
+            steps {
+                script {
+                    // Detect the platform (Linux, macOS, or Windows)
+                    def os = ''
+                    def snykInstalled = false
+
+                    // Detect platform and check if Snyk is installed
+                    if (isUnix()) {
+                        // Linux or macOS
+                        os = sh(script: 'uname -s', returnStdout: true).trim()
+
+                        // Check if Snyk is already installed on Linux/macOS
+                        snykInstalled = sh(script: 'which snyk || [ -f ./snyk ]', returnStatus: true) == 0
+                    } else {
+                        // Windows
+                        os = 'Windows'
+                        
+                        // Check if Snyk is already installed on Windows
+                        //snykInstalled = fileExists('C:\\ProgramData\\snyk.exe') // Adjust if needed
+                        
+
+                        // Check if snyk.exe exists in C:\ProgramData or local folder
+                         snykInstalled = bat(script: '''
+                        if exist C:\\ProgramData\\snyk.exe (   // Adjust if needed
+                            exit 0
+                        ) else if exist .\\snyk.exe (
+                            exit 0
+                        ) else (
+                            exit 1
+                        )
+                    ''', returnStatus: true) == 0
+                    }
+
+                    // If Snyk is not installed, proceed to install
+                    if (!snykInstalled) {
+                        echo "Snyk CLI is not installed. Installing..."
+
+                        // Install Snyk based on platform
+                        if (os == 'Linux') {
+                            echo 'Linux detected. Installing Snyk CLI for Linux...'
+                            sh '''
+                                curl -sL https://downloads.snyk.io/cli/stable/snyk-linux -o ./snyk
+                                chmod +x ./snyk
+                            '''
+                        } else if (os == 'Darwin') {
+                            echo 'macOS detected. Installing Snyk CLI for macOS...'
+                            sh '''
+                                curl -sL https://downloads.snyk.io/cli/stable/snyk-macos -o ./snyk
+                                chmod +x ./snyk
+                            '''
+                        } else if (os == 'Windows') {
+                            echo 'Windows detected. Installing Snyk CLI for Windows...'
+                            bat '''
+                                curl -sL https://downloads.snyk.io/cli/stable/snyk-win.exe -o snyk.exe
+                            '''
+                        } else {
+                            error "Unsupported OS: ${os}"
+                        }
+                    } else {
+                        echo "Snyk CLI is already installed."
+                    }
+                }
+            }
+        }
+    
         stage('Snyk IaC Scan Test') {
             steps {
                 withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
-                    sh '''
-                        export PATH=$PATH:/var/lib/jenkins/tools/io.snyk.jenkins.tools.SnykInstallation/snyk
-                        snyk-linux auth $SNYK_TOKEN
-                        snyk-linux iac test --org=$SNYK_ORG --severity-threshold=high || true
-                    '''
+                    script {
+                        if (isUnix()) {
+                            // Unix/Linux/macOS-based systems
+                            sh '''
+                                ./snyk auth $SNYK_TOKEN
+                                ./snyk iac test --org=$SNYK_ORG --severity-threshold=high || true
+                            '''
+                        } else {
+                            // Windows-based systems
+                            bat '''
+                                .\\snyk auth %SNYK_TOKEN%
+                                .\\snyk iac test --org=%SNYK_ORG% --severity-threshold=high || exit /b 0
+                            '''
+                        }
+                    }
                 }
             }
         }
 
-        
+
         stage('Snyk IaC Scan Monitor') {
             steps {
                 snykSecurity(
-                    snykInstallation: 'snyk',
+                    snykInstallation: 'snyk',  // This references the global Snyk tool
                     snykTokenId: 'snyk-api-token',
                     additionalArguments: '--iac --report --org=$SNYK_ORG --severity-threshold=high',
                     failOnIssues: true,
@@ -43,7 +119,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkinstest' //aws creds
+                    credentialsId: 'jenkins_test001'
                 ]]) {
                     sh 'terraform init'
                 }
@@ -54,7 +130,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkinstest'
+                    credentialsId: 'jenkins_test001'
                 ]]) {
                     sh 'terraform plan'
                 }
@@ -79,7 +155,7 @@ pipeline {
                     if (destroyChoice == 'yes') {
                         withCredentials([[
                             $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'jenkinstest'
+                            credentialsId: 'jenkins_test001'
                         ]]) {
                             sh 'terraform destroy -auto-approve'
                         }
