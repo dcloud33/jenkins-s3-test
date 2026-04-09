@@ -23,18 +23,18 @@ resource "aws_security_group" "wide_open" {
   }
 }
 
-resource "aws_iam_policy" "wildcard_policy" {
-  name = "wildcard-policy"
+#resource "aws_iam_policy" "wildcard_policy" {
+ # name = "wildcard-policy"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "*"
-      Resource = "*"
-    }]
-  })
-}
+  #policy = jsonencode({
+   # Version = "2012-10-17"
+    #Statement = [{
+     # Effect   = "Allow"
+      #Action   = "*"
+      #Resource = "*"
+   # }]
+  #})
+#}
 
 resource "aws_instance" "no_imdsv2" {
   ami           = "ami-0c55b159cbfafe1f0"
